@@ -223,7 +223,8 @@ class NerModel(nn.Module):
         # type: PackedSequence
         packed_word_embeddings = pack_padded_sequence(
             word_embeddings,
-            lengths=torch.tensor([len(seq) for seq in sentences], device=self.device),
+            # keep the lengths tensor on cpu to mitigate https://github.com/pytorch/pytorch/issues/43227
+            lengths=torch.tensor([len(seq) for seq in sentences]).cpu(),
             batch_first=True, enforce_sorted=False
         )
 
@@ -467,8 +468,8 @@ def train(args):
             loss.backward()
             # Perform one step of parameter update using the newly-computed gradients
             optimizer.step()
-
-            print(f'Epoch {epoch_id}, batch {batch_id}, loss={loss.item()}')
+            if not batch_id % args.batches_to_log:
+                print(f'Epoch {epoch_id}, batch {batch_id}, loss={loss.item()}')
 
         eval_result = evaluate(model, dev_set, args.batch_size)
         dev_accuracy = eval_result["accuracy"]
@@ -505,6 +506,7 @@ def main():
     train_parser.add_argument('--hidden-size', type=int, default=256, help='Size of the LSTM hidden layer.')
     train_parser.add_argument('--batch-size', type=int, default=32, help='Training batch size')
     train_parser.add_argument('--max-epoch', type=int, default=32, help='Maximum number of training epoches')
+    train_parser.add_argument('--batches-to-log', type=int, default=25, help='Print the log every n batches')
     train_parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for Adam')
     train_parser.add_argument('--model-save-path', type=Path, default='model.bin', help='Model save path')
 

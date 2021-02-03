@@ -21,9 +21,9 @@ class CNNclass(torch.nn.Module):
         torch.nn.init.xavier_uniform_(self.projection_layer.weight)
 
     def forward(self, words):
-        emb = self.embedding(words)                 # nwords x emb_size
-        emb = emb.unsqueeze(0).permute(0, 2, 1)     # 1 x emb_size x nwords
-        h = self.conv_1d(emb)                       # 1 x num_filters x nwords
+        emb = self.embedding(words)                 # seq_len x emb_size
+        emb = emb.unsqueeze(0).permute(0, 2, 1)     # 1 x emb_size x seq_len
+        h = self.conv_1d(emb)                       # 1 x num_filters x seq_len_out
         # Do max pooling
         h = h.max(dim=2)[0]                         # 1 x num_filters
         h = self.relu(h)
@@ -65,6 +65,7 @@ type = torch.LongTensor
 use_cuda = torch.cuda.is_available()
 
 if use_cuda:
+    print("Using GPU")
     type = torch.cuda.LongTensor
     model.cuda()
 

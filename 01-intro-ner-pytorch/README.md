@@ -38,8 +38,8 @@ python ner.py --cuda \
     --batch-size 32 \
     --embedding-size 256 \
     --hidden-size 256 \
-    --train-set ../data/ner/conll/train.txt \
-    --dev-set ../data/ner/conll/valid.txt \
+    --train-set ../data/ner/conll2003/train.txt \
+    --dev-set ../data/ner/conll2003/valid.txt \
     --model-save-path model.bin
 ```
 
@@ -49,7 +49,7 @@ python ner.py --cuda \
     test \
     --batch-size 32 \
     --model-path model.bin \
-    --test-set ../data/ner/conll/test.txt \
+    --test-set ../data/ner/conll2003/test.txt \
     --output test.predict.txt
 ```
 The prediction results will be saved in `test.predict.txt`. It will call the official evaluation script `conlleval` to compute evaluation metrics.

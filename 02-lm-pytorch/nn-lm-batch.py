@@ -98,7 +98,7 @@ def generate_sent():
   while True:
     logits = calc_score_of_histories([hist])
     prob = nn.functional.softmax(logits)
-    next_word = prob.multinomial().data[0,0]
+    next_word = prob.multinomial(1).data[0,0]
     if next_word == S or len(sent) == MAX_LEN:
       break
     sent.append(next_word)
@@ -117,7 +117,7 @@ for ITER in range(5):
   start = time.time()
   for sent_id, sent in enumerate(train):
     my_loss = calc_sent_loss(sent)
-    train_loss += my_loss.data[0]
+    train_loss += my_loss.data.item()
     train_words += len(sent)
     optimizer.zero_grad()
     my_loss.backward()
@@ -133,7 +133,7 @@ for ITER in range(5):
   start = time.time()
   for sent_id, sent in enumerate(dev):
     my_loss = calc_sent_loss(sent)
-    dev_loss += my_loss.data[0]
+    dev_loss += my_loss.data.item()
     dev_words += len(sent)
 
   # Keep track of the development accuracy and reduce the learning rate if it got worse
@@ -152,4 +152,4 @@ for ITER in range(5):
   # Generate a few sentences
   for _ in range(5):
     sent = generate_sent()
-    print(" ".join([i2w[x] for x in sent]))
+    print(" ".join([i2w[x.item()] for x in sent]))

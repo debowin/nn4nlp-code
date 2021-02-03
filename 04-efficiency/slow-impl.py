@@ -1,6 +1,11 @@
+import dynet_config
+# set random seed to have the same result each time
+dynet_config.set(random_seed=169)
 import dynet as dy
 import numpy as np
+import time
 
+start = time.time()
 # This implementation will be unnecessarily slow, especially on the GPU.
 # It can be improved by following the speed tricks covered in class:
 # 1) Don't repeat operations.
@@ -13,22 +18,20 @@ trainer = dy.SimpleSGDTrainer(model)
 W = model.add_parameters((100,100))
 
 # Create the "training data"
-x_vecs = []
-y_vecs = []
-for i in range(10):
-  x_vecs.append(np.random.rand(100))
-  y_vecs.append(np.random.rand(100))
+x_vecs = np.random.rand(10, 100)
+y_vecs = np.random.rand(10, 100)
 
+sum = 0
 # Do the processing
 for my_iter in range(1000):
   dy.renew_cg()
   total = 0
-  for x in x_vecs:
-    for y in y_vecs:
-      x_exp = dy.inputTensor(x)
-      y_exp = dy.inputTensor(y)
-      total = total + dy.dot_product(W * x_exp, y_exp)
+  x_W_exp = dy.inputTensor(x_vecs) * W # 10, 100
+  total = dy.sum_elems(x_W_exp * dy.inputTensor(y_vecs.transpose())) # 10, 10 -> 1
+  sum += total.scalar_value()
   total.forward()
   total.backward()
   trainer.update()
 
+total_time = time.time() - start
+print(f"Time Taken: {total_time:.2f}s, Total: {sum:.2f}")
