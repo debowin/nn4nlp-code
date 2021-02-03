@@ -3,6 +3,7 @@ import time
 import random
 import torch
 import numpy as np
+import sys
 
 
 class CNNclass(torch.nn.Module):
@@ -36,7 +37,7 @@ class CNNclass(torch.nn.Module):
         return out
 
 
-np.set_printoptions(linewidth=np.nan, threshold=np.nan)
+np.set_printoptions(linewidth=sys.maxsize, threshold=sys.maxsize)
 
 # Functions to read in the corpus
 w2i = defaultdict(lambda: len(w2i))
@@ -70,6 +71,7 @@ type = torch.LongTensor
 use_cuda = torch.cuda.is_available()
 
 if use_cuda:
+    print("Using GPU")
     type = torch.cuda.LongTensor
     model.cuda()
 

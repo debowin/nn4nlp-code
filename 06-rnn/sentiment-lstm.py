@@ -67,4 +67,4 @@ for ITER in range(100):
         predict = np.argmax(scores)
         if predict == tag:
             test_correct += 1
-    print("iter %r: test acc=%.4f" % (ITER, test_correct / len(dev)))
+    print("iter %r: test acc=%.2f" % (ITER, test_correct*100 / len(dev)))
