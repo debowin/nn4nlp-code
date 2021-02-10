@@ -40,7 +40,6 @@ EMBED_SIZE = 64
 HIDDEN_SIZE = 128
 NLAYERS = 2
 DROPOUT = 0.2
-SEQ_LENGTH = 7
 
 USE_CUDA = torch.cuda.is_available()
 
@@ -54,22 +53,22 @@ class LSTMClass(nn.Module):
         torch.nn.init.uniform_(self.embedding.weight, -0.25, 0.25)
 
         self.lstm = nn.LSTM(
-            input_size=emb_size, 
+            input_size=emb_size,
             hidden_size=hidden_size,
-            num_layers=nlayers, 
+            num_layers=nlayers,
             dropout=dropout
         )
 
         self.projection_layer = torch.nn.Linear(hidden_size, nwords, bias=True)
         # Initializing the projection layer
         torch.nn.init.xavier_uniform_(self.projection_layer.weight)
-    
+
     def forward(self, words):
         embedding = self.embedding(words) # seqln * embsz
         lstm_out, _ = self.lstm(embedding.view(len(words), 1, -1)) # seqln * bsz * hidsz
         logits = self.projection_layer(lstm_out.view(len(words), -1)) # seqln * nwords
         return logits
-        
+
 
 model = LSTMClass(nwords=nwords, emb_size=EMBED_SIZE, hidden_size=HIDDEN_SIZE, nlayers=NLAYERS, dropout=DROPOUT)
 if USE_CUDA:
@@ -89,7 +88,7 @@ def convert_to_variable(list_):
     return variable
 
 # Build the language model graph
-def calc_lm_loss(criterion, words):
+def calc_lm_loss(words):
     # get the wids and masks for each step
     tot_words = len(words)
 
@@ -131,7 +130,7 @@ for ITER in range(10):
         i += 1
         if i % int(2000) == 0:
             print(
-                "[TRAIN] iter %r(step: %r): nll=%.2f, ppl=%.2f" % 
+                "[TRAIN] iter %r(step: %r): nll=%.2f, ppl=%.2f" %
                 (
                     ITER, i, this_loss/this_words, math.exp(this_loss/this_words)
                 )
@@ -143,13 +142,13 @@ for ITER in range(10):
             model.eval()
             dev_loss = dev_words = 0
             for sent in test:
-                loss_exp, mb_words = calc_lm_loss(criterion, sent)
+                loss_exp, mb_words = calc_lm_loss(sent)
                 dev_loss += loss_exp.item()
                 dev_words += mb_words
             dev_time += time.time() - dev_start
             train_time = time.time() - start - dev_time
             print("[DEV] iter=%r, nll=%.2f, ppl=%.2f, words=%r, time=%.2f, word_per_sec=%.2f" % (
-                ITER, dev_loss / dev_words, 
+                ITER, dev_loss / dev_words,
                 math.exp(dev_loss / dev_words), dev_words,
                 train_time, all_tagged / train_time)
             )
@@ -159,7 +158,7 @@ for ITER in range(10):
                 best_dev = dev_loss
         # train on the minibatch
         model.train()
-        loss_exp, mb_words = calc_lm_loss(criterion, train[sid])
+        loss_exp, mb_words = calc_lm_loss(train[sid])
         this_loss += loss_exp.item()
         this_words += mb_words
         optimizer.zero_grad()

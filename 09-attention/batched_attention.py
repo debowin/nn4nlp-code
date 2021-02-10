@@ -53,8 +53,8 @@ def read(fname_src, fname_trg):
     with open(fname_src, "r") as f_src, open(fname_trg, "r") as f_trg:
         for line_src, line_trg in zip(f_src, f_trg):
             #need to append EOS tags to at least the target sentence
-            sent_src = [w2i_src[x] for x in line_src.strip().split() + ['</s>']] 
-            sent_trg = [w2i_trg[x] for x in ['<s>'] + line_trg.strip().split() + ['</s>']] 
+            sent_src = [w2i_src[x] for x in line_src.strip().split() + ['</s>']]
+            sent_trg = [w2i_trg[x] for x in ['<s>'] + line_trg.strip().split() + ['</s>']]
             yield (sent_src, sent_trg)
 
 # Read the data
@@ -80,7 +80,7 @@ trainer = dy.AdamTrainer(model)
 
 # Model parameters
 EMBED_SIZE = 64
-HIDDEN_SIZE = 128
+HIDDEN_SIZE = 256
 ATTENTION_SIZE = 128
 BATCH_SIZE = 16
 
@@ -102,7 +102,7 @@ LSTM_TRG_BUILDER = dy.LSTMBuilder(1, EMBED_SIZE, HIDDEN_SIZE, model, dy.LSTMBuil
 W_m_p = model.add_parameters((HIDDEN_SIZE, HIDDEN_SIZE*2))
 b_m_p = model.add_parameters(HIDDEN_SIZE)
 
-#the softmax from the hidden size 
+#the softmax from the hidden size
 W_sm_p = model.add_parameters((nwords_trg, HIDDEN_SIZE))         # Weights of the softmax
 b_sm_p = model.add_parameters((nwords_trg))                   # Softmax bias
 
@@ -128,7 +128,7 @@ def calc_loss(sents):
     tgt_sents = [x[1] for x in sents]
     src_cws = []
 
-    src_len = [len(sent) for sent in src_sents]        
+    src_len = [len(sent) for sent in src_sents]
     max_src_len = np.max(src_len)
     num_words = 0
 
@@ -172,7 +172,7 @@ def calc_loss(sents):
     b_m = dy.parameter(b_m_p)
 
     for next_words, mask in zip(tgt_cws[1:], masks):
-        #feed the current state into the 
+        #feed the current state into the
         current_state = current_state.add_input(dy.lookup_batch(LOOKUP_TRG, prev_words))
         output_embedding = current_state.output()
         att_output, _ = calc_attention(src_output_matrix, output_embedding, fixed_attentional_component)
@@ -242,7 +242,7 @@ for ITER in range(5):
   # Perform training
   train.sort(key=lambda t: len(t[0]), reverse=True)
   dev.sort(key=lambda t: len(t[0]), reverse=True)
-  train_order = create_batches(train, BATCH_SIZE) 
+  train_order = create_batches(train, BATCH_SIZE)
   dev_order = create_batches(dev, BATCH_SIZE)
   train_words, train_loss = 0, 0.0
   start_time = time.time()

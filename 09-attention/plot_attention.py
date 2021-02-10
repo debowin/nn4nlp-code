@@ -32,7 +32,7 @@ def plot_attention(src_words, trg_words, attention_matrix, file_name=None):
   """
   fig, ax = plt.subplots()
   #a lazy, rough, approximate way of making the image large enough
-  fig.set_figwidth(int(len(trg_words)*.6))
+  fig.set_figwidth(int(len(trg_words)*1.25))
 
   # put the major ticks at the middle of each cell
   ax.set_xticks(np.arange(attention_matrix.shape[1]) + 0.5, minor=False)
@@ -53,4 +53,3 @@ def plot_attention(src_words, trg_words, attention_matrix, file_name=None):
   else:
     plt.show()
   plt.close()
-

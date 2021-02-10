@@ -50,8 +50,8 @@ def read(fname_src, fname_trg):
     with open(fname_src, "r") as f_src, open(fname_trg, "r") as f_trg:
         for line_src, line_trg in zip(f_src, f_trg):
             #need to append EOS tags to at least the target sentence
-            sent_src = [w2i_src[x] for x in line_src.strip().split() + ['</s>']] 
-            sent_trg = [w2i_trg[x] for x in ['<s>'] + line_trg.strip().split() + ['</s>']] 
+            sent_src = [w2i_src[x] for x in line_src.strip().split() + ['</s>']]
+            sent_trg = [w2i_trg[x] for x in ['<s>'] + line_trg.strip().split() + ['</s>']]
             yield (sent_src, sent_trg)
 
 # Read the data
@@ -90,7 +90,7 @@ LOOKUP_TRG = model.add_lookup_parameters((nwords_trg, EMBED_SIZE))
 LSTM_SRC_BUILDER = dy.LSTMBuilder(1, EMBED_SIZE, HIDDEN_SIZE, model)
 LSTM_TRG_BUILDER = dy.LSTMBuilder(1, EMBED_SIZE, HIDDEN_SIZE, model)
 
-#the softmax from the hidden size 
+#the softmax from the hidden size
 W_sm_p = model.add_parameters((nwords_trg, HIDDEN_SIZE))         # Weights of the softmax
 b_sm_p = model.add_parameters((nwords_trg))                   # Softmax bias
 
@@ -104,7 +104,7 @@ def calc_loss(sents):
     tgt_sents = [x[1] for x in sents]
     src_cws = []
 
-    src_len = [len(sent) for sent in src_sents]        
+    src_len = [len(sent) for sent in src_sents]
     max_src_len = np.max(src_len)
     num_words = 0
 
@@ -141,7 +141,7 @@ def calc_loss(sents):
     b_sm = dy.parameter(b_sm_p)
 
     for next_words, mask in zip(tgt_cws[1:], masks):
-        #feed the current state into the 
+        #feed the current state into the
         current_state = current_state.add_input(dy.lookup_batch(LOOKUP_TRG, prev_words))
         output_embedding = current_state.output()
 
@@ -191,31 +191,33 @@ def generate(sent):
 
 
 for ITER in range(100):
-  # Perform training
-  train.sort(key=lambda t: len(t[0]), reverse=True)
-  dev.sort(key=lambda t: len(t[0]), reverse=True)
-  train_order = create_batches(train, BATCH_SIZE) 
-  dev_order = create_batches(dev, BATCH_SIZE)
-  train_words, train_loss = 0, 0.0
-  start = time.time()
-  for sent_id, (start, length) in enumerate(train_order):
-    train_batch = train[start:start+length]
-    my_loss, num_words = calc_loss(train_batch)
-    train_loss += my_loss.value()
-    train_words += num_words
-    my_loss.backward()
-    trainer.update()
-    if (sent_id+1) % 5000 == 0:
-      print("--finished %r sentences" % (sent_id+1))
-  print("iter %r: train loss/word=%.4f, ppl=%.4f, time=%.2fs" % (ITER, train_loss/train_words, math.exp(train_loss/train_words), time.time()-start))
-  # Evaluate on dev set
-  dev_words, dev_loss = 0, 0.0
-  start = time.time()
-  print(generate(dev[0][0]))
-  for sent_id, (start, length) in enumerate(dev_order):
-    dev_batch = dev[start:start+length]
-    my_loss, num_words = calc_loss(dev_batch)
-    dev_loss += my_loss.value()
-    dev_words += num_words
-    trainer.update()
-  print("iter %r: dev loss/word=%.4f, ppl=%.4f, time=%.2fs" % (ITER, dev_loss/dev_words, math.exp(dev_loss/dev_words), time.time()-start))
+    # Perform training
+    train.sort(key=lambda t: len(t[0]), reverse=True)
+    dev.sort(key=lambda t: len(t[0]), reverse=True)
+    train_order = create_batches(train, BATCH_SIZE)
+    dev_order = create_batches(dev, BATCH_SIZE)
+    train_words, train_loss = 0, 0.0
+    start_time = time.time()
+    for sent_id, (start, length) in enumerate(train_order):
+        train_batch = train[start:start+length]
+        my_loss, num_words = calc_loss(train_batch)
+        train_loss += my_loss.value()
+        train_words += num_words
+        my_loss.backward()
+        trainer.update()
+        if (sent_id+1) % 5000 == 0:
+            print("--finished %r sentences" % (sent_id+1))
+    print("iter %r: train loss/word=%.4f, ppl=%.4f, time=%.2fs" % (ITER, train_loss/train_words, math.exp(train_loss/train_words), time.time()-start_time))
+    # Evaluate on dev set
+    dev_words, dev_loss = 0, 0.0
+    start_time = time.time()
+    sample_dev = random.choice(dev)
+    print("[DEV] Target:\t" + " ".join(map(lambda x: i2w_trg[x], sample_dev[1])))
+    print("[DEV] Pred:\t" + " ".join(generate(sample_dev[0])))
+    for sent_id, (start, length) in enumerate(dev_order):
+        dev_batch = dev[start:start+length]
+        my_loss, num_words = calc_loss(dev_batch)
+        dev_loss += my_loss.value()
+        dev_words += num_words
+        trainer.update()
+    print("iter %r: dev loss/word=%.4f, ppl=%.4f, time=%.2fs" % (ITER, dev_loss/dev_words, math.exp(dev_loss/dev_words), time.time()-start_time))

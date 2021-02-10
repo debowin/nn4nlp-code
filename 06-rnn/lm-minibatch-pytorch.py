@@ -58,9 +58,9 @@ class LSTMClass(nn.Module):
         torch.nn.init.uniform_(self.embedding.weight, -0.25, 0.25)
 
         self.lstm = nn.LSTM(
-            input_size=emb_size, 
+            input_size=emb_size,
             hidden_size=hidden_size,
-            num_layers=nlayers, 
+            num_layers=nlayers,
             dropout=dropout,
             batch_first=True
         )
@@ -68,17 +68,17 @@ class LSTMClass(nn.Module):
         self.projection_layer = torch.nn.Linear(hidden_size, nwords, bias=True)
         # Initializing the projection layer
         torch.nn.init.xavier_uniform_(self.projection_layer.weight)
-    
+
     def forward(self, words, seq_lengths):
         batch_size, seq_len = words.size()
         embedding = self.embedding(words) # bsz * seqln * embsz
-        embedding = nn.utils.rnn.pack_padded_sequence(embedding, batch_first=True, lengths=seq_lengths) 
+        embedding = nn.utils.rnn.pack_padded_sequence(embedding, batch_first=True, lengths=seq_lengths)
         lstm_out, _ = self.lstm(embedding) # bsz * seqln * hidsz
         lstm_out, _ = nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
         lstm_out = lstm_out.contiguous()
         logits = self.projection_layer(lstm_out.view(batch_size * seq_len, -1)) # (bsz * seqln) * nwords
         return logits
-        
+
 
 model = LSTMClass(nwords=nwords, emb_size=EMBED_SIZE, hidden_size=HIDDEN_SIZE, nlayers=NLAYERS, dropout=DROPOUT, padding_idx=S)
 if USE_CUDA:
@@ -95,7 +95,7 @@ def convert_to_variable(list_):
     return variable
 
 # Build the language model graph
-def calc_lm_loss(criterion, sents):
+def calc_lm_loss(sents):
     tot_words = 0
     inputs = []
     targets = []
@@ -120,7 +120,7 @@ def calc_lm_loss(criterion, sents):
     logits = model(inputs, lengths) # (bsz * seqln) * nwords
     # zero out padded logits
     logits = logits * masks
-    
+
     loss = criterion(logits, targets)
 
     return loss, tot_words
@@ -128,7 +128,7 @@ def calc_lm_loss(criterion, sents):
 
 MAX_LEN = 100
 # Generate a sentence
-def generate_sents(model, num):
+def generate_sents(num):
     model.eval()
     sents = [[S] for _ in range(num)]
     done = [0] * num
@@ -169,7 +169,7 @@ for ITER in range(20):
         i += 1
         if i % int(2000 / MB_SIZE) == 0:
             print(
-                "[TRAIN] iter %r(step: %r): nll=%.2f, ppl=%.2f" % 
+                "[TRAIN] iter %r(step: %r): nll=%.2f, ppl=%.2f" %
                 (
                     ITER, i, this_loss/this_words, math.exp(this_loss/this_words)
                 )
@@ -181,13 +181,13 @@ for ITER in range(20):
             model.eval()
             dev_loss = dev_words = 0
             for sid in test_order:
-                loss_exp, mb_words = calc_lm_loss(criterion, test[sid:sid + MB_SIZE])
+                loss_exp, mb_words = calc_lm_loss(test[sid:sid + MB_SIZE])
                 dev_loss += loss_exp.item()
                 dev_words += mb_words
             dev_time += time.time() - dev_start
             train_time = time.time() - start - dev_time
             print("[DEV] iter=%r, nll=%.2f, ppl=%.2f, words=%r, time=%.2f, word_per_sec=%.2f" % (
-                ITER, dev_loss / dev_words, 
+                ITER, dev_loss / dev_words,
                 math.exp(dev_loss / dev_words), dev_words,
                 train_time, all_tagged / train_time)
             )
@@ -197,7 +197,7 @@ for ITER in range(20):
                 best_dev = dev_loss
         # train on the minibatch
         model.train()
-        loss_exp, mb_words = calc_lm_loss(criterion, train[sid:sid + MB_SIZE])
+        loss_exp, mb_words = calc_lm_loss(train[sid:sid + MB_SIZE])
         this_loss += loss_exp.item()
         this_words += mb_words
         optimizer.zero_grad()
@@ -207,6 +207,6 @@ for ITER in range(20):
 
 # Generate a few sentences
 model = torch.load("model.pt")
-sents = generate_sents(model, 5)
+sents = generate_sents(5)
 for i, sent in enumerate(sents):
     print(f"{i}: " + " ".join([i2w[x] for x in sent]))
